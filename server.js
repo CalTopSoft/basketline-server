@@ -12,41 +12,20 @@ if (!mongoUri) {
 }
 const client = new MongoClient(mongoUri);
 
-const rooms = {
-    room1: { 
-        players: [], 
-        scores: [0, 0], 
-        round: 1, 
-        attempts: [0, 0], 
-        totalAttempts: [0, 0], 
-        turn: 0, 
-        afk: [0, 0], 
-        ball: { x: 300, y: 405, vx: 0, vy: 0, thrown: false, rotation: 0 }, 
-        timer: 8, 
-        lastTimerUpdate: Date.now(), 
-        hoopX: 300, 
-        hoopDirection: 1, 
-        bounceCount: 0,
-        gameStarted: false,
-        gameEnded: false,
-        shotInProgress: false,
-        lastBounceTime: 0,
-        playerIcons: ['img/iconos/memes/meme1.png', 'img/iconos/memes/meme1.png'],
-        chatMessages: []
-    },
-    room2: { 
-        players: [], 
-        scores: [0, 0], 
-        round: 1, 
-        attempts: [0, 0], 
+function createRoom() {
+    return {
+        players: [],
+        scores: [0, 0],
+        round: 1,
+        attempts: [0, 0],
         totalAttempts: [0, 0],
-        turn: 0, 
-        afk: [0, 0], 
-        ball: { x: 300, y: 405, vx: 0, vy: 0, thrown: false, rotation: 0 }, 
-        timer: 8, 
-        lastTimerUpdate: Date.now(), 
-        hoopX: 300, 
-        hoopDirection: 1, 
+        turn: 0,
+        afk: [0, 0],
+        ball: { x: 300, y: 405, vx: 0, vy: 0, thrown: false, rotation: 0 },
+        timer: 8,
+        lastTimerUpdate: Date.now(),
+        hoopX: 300,
+        hoopDirection: 1,
         bounceCount: 0,
         gameStarted: false,
         gameEnded: false,
@@ -54,8 +33,15 @@ const rooms = {
         lastBounceTime: 0,
         playerIcons: ['img/iconos/memes/meme1.png', 'img/iconos/memes/meme1.png'],
         chatMessages: []
-    }
+    };
+}
+
+const rooms = {
+    room1: createRoom(),
+    room2: createRoom(),
+    room3: createRoom()
 };
+
 let rankings = [];
 
 const loadRankings = async () => {
@@ -279,7 +265,8 @@ const passTurn = async (room, roomName) => {
                         type: 'rooms',
                         rooms: {
                             room1: { players: rooms.room1.players.length },
-                            room2: { players: rooms.room2.players.length }
+                            room2: { players: rooms.room2.players.length },
+                            room3: { players: rooms.room3.players.length }
                         }
                     }));
                 }
@@ -430,7 +417,8 @@ const endGame = async (room, roomName) => {
                 type: 'rooms',
                 rooms: {
                     room1: { players: rooms.room1.players.length },
-                    room2: { players: rooms.room2.players.length }
+                    room2: { players: rooms.room2.players.length },
+                    room3: { players: rooms.room3.players.length }
                 }
             }));
         }
@@ -492,7 +480,8 @@ wss.on('connection', (ws) => {
                             type: 'rooms',
                             rooms: {
                                 room1: { players: rooms.room1.players.length },
-                                room2: { players: rooms.room2.players.length }
+                                room2: { players: rooms.room2.players.length },
+                                room3: { players: rooms.room3.players.length }
                             }
                         }));
                     }
@@ -549,7 +538,8 @@ wss.on('connection', (ws) => {
                 type: 'rooms',
                 rooms: {
                     room1: { players: rooms.room1.players.length },
-                    room2: { players: rooms.room2.players.length }
+                    room2: { players: rooms.room2.players.length },
+                    room3: { players: rooms.room3.players.length }
                 }
             }));
         }
@@ -577,7 +567,8 @@ wss.on('connection', (ws) => {
                             type: 'rooms',
                             rooms: {
                                 room1: { players: rooms.room1.players.length },
-                                room2: { players: rooms.room2.players.length }
+                                room2: { players: rooms.room2.players.length },
+                                room3: { players: rooms.room3.players.length }
                             }
                         }));
                     }
