@@ -88,7 +88,7 @@ const updateGameState = () => {
         }
 
         if (room.round >= 2) {
-            let hoopSpeed = room.round === 3 ? 1.5 : 1.2;
+            let hoopSpeed = room.round === 3 ? 2.0 : 1.2;
             room.hoopX += room.hoopDirection * hoopSpeed;
             if (room.hoopX >= 450 || room.hoopX <= 150) {
                 room.hoopDirection *= -1;
