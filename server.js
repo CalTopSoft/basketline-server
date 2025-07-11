@@ -166,10 +166,13 @@ const updateGameState = () => {
                     const previousScore = room.scores[room.turn];
                     room.scores[room.turn] += 2;
                     room.afk[room.turn] = 0;
+                
+                    // Enviar scoreUpdate con scoringPlayer
                     room.players.forEach(p => {
                         if (p.ws.readyState === 1) {
                             p.ws.send(JSON.stringify({
                                 type: 'scoreUpdate',
+                                scoringPlayer: room.turn, // aquí dices quién encestó
                                 scores: room.scores,
                                 turn: room.turn,
                                 previousScore: previousScore,
@@ -177,7 +180,19 @@ const updateGameState = () => {
                             }));
                         }
                     });
+                
+                    // Enviar confetti
+                    room.players.forEach(p => {
+                        if (p.ws.readyState === 1) {
+                            p.ws.send(JSON.stringify({
+                                type: 'confetti',
+                                scoringPlayer: room.turn
+                            }));
+                        }
+                    });
+                
                     finalizarTiro(room, roomName, true);
+                }
                 } else {
                     const hitLeftCorner = Math.abs(room.ball.x - hoopLeft) < 15 && Math.abs(room.ball.y - hoopTop) < 15;
                     const hitRightCorner = Math.abs(room.ball.x - hoopRight) < 15 && Math.abs(room.ball.y - hoopTop) < 15;
