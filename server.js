@@ -192,7 +192,6 @@ const updateGameState = () => {
                     });
                 
                     finalizarTiro(room, roomName, true);
-                }
                 } else {
                     const hitLeftCorner = Math.abs(room.ball.x - hoopLeft) < 15 && Math.abs(room.ball.y - hoopTop) < 15;
                     const hitRightCorner = Math.abs(room.ball.x - hoopRight) < 15 && Math.abs(room.ball.y - hoopTop) < 15;
