@@ -175,11 +175,6 @@ const updateGameState = () => {
                                 previousScore: previousScore,
                                 newScore: room.scores[room.turn]
                             }));
-                            // Enviar mensaje de confeti a ambos jugadores
-                            p.ws.send(JSON.stringify({
-                                type: 'confetti',
-                                playerIndex: room.turn
-                            }));
                         }
                     });
                     finalizarTiro(room, roomName, true);
