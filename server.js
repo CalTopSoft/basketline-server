@@ -504,8 +504,14 @@ wss.on('connection', (ws) => {
 
         if (data.type === 'shot') {
             const room = rooms[data.room];
-            if (room.turn !== data.playerIndex || !room.gameStarted || room.gameEnded ||
-                room.ball.thrown || room.shotInProgress || room.attempts[room.turn] >= 5) {
+            if (
+                room.turn !== data.playerIndex ||
+                !room.gameStarted ||
+                room.gameEnded ||
+                room.ball.thrown ||
+                room.shotInProgress ||
+                room.attempts[room.turn] >= 5
+            ) {
                 return;
             }
             room.ball.vx = data.ballVX;
@@ -554,7 +560,7 @@ wss.on('connection', (ws) => {
                 }
             }));
         }
-    }
+    });
 
     ws.on('close', () => {
         for (const roomName in rooms) {
