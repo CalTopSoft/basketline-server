@@ -12,20 +12,20 @@ if (!mongoUri) {
 }
 const client = new MongoClient(mongoUri);
 
-function createRoom() {
-    return {
-        players: [],
-        scores: [0, 0],
-        round: 1,
-        attempts: [0, 0],
-        totalAttempts: [0, 0],
-        turn: 0,
-        afk: [0, 0],
-        ball: { x: 300, y: 405, vx: 0, vy: 0, thrown: false, rotation: 0 },
-        timer: 8,
-        lastTimerUpdate: Date.now(),
-        hoopX: 300,
-        hoopDirection: 1,
+const rooms = {
+    room1: { 
+        players: [], 
+        scores: [0, 0], 
+        round: 1, 
+        attempts: [0, 0], 
+        totalAttempts: [0, 0], 
+        turn: 0, 
+        afk: [0, 0], 
+        ball: { x: 300, y: 405, vx: 0, vy: 0, thrown: false, rotation: 0 }, 
+        timer: 8, 
+        lastTimerUpdate: Date.now(), 
+        hoopX: 300, 
+        hoopDirection: 1, 
         bounceCount: 0,
         gameStarted: false,
         gameEnded: false,
@@ -33,15 +33,29 @@ function createRoom() {
         lastBounceTime: 0,
         playerIcons: ['img/iconos/memes/meme1.png', 'img/iconos/memes/meme1.png'],
         chatMessages: []
-    };
-}
-
-const rooms = {
-    room1: createRoom(),
-    room2: createRoom(),
-    room3: createRoom()
+    },
+    room2: { 
+        players: [], 
+        scores: [0, 0], 
+        round: 1, 
+        attempts: [0, 0], 
+        totalAttempts: [0, 0],
+        turn: 0, 
+        afk: [0, 0], 
+        ball: { x: 300, y: 405, vx: 0, vy: 0, thrown: false, rotation: 0 }, 
+        timer: 8, 
+        lastTimerUpdate: Date.now(), 
+        hoopX: 300, 
+        hoopDirection: 1, 
+        bounceCount: 0,
+        gameStarted: false,
+        gameEnded: false,
+        shotInProgress: false,
+        lastBounceTime: 0,
+        playerIcons: ['img/iconos/memes/meme1.png', 'img/iconos/memes/meme1.png'],
+        chatMessages: []
+    }
 };
-
 let rankings = [];
 
 const loadRankings = async () => {
@@ -72,13 +86,6 @@ const saveRankings = async () => {
 
 loadRankings();
 
-// Optimización: Estados previos por habitación para deltas
-const prevStates = {
-    room1: {},
-    room2: {},
-    room3: {}
-};
-
 const updateGameState = () => {
     for (const roomName in rooms) {
         const room = rooms[roomName];
@@ -86,25 +93,20 @@ const updateGameState = () => {
 
         const now = Date.now();
 
-        let stateChanged = false;
-
         if (now - room.lastTimerUpdate >= 1000 && !room.shotInProgress) {
             room.timer -= 1;
             room.lastTimerUpdate = now;
-            stateChanged = true;
             if (room.timer <= 0) {
                 passTurn(room, roomName);
-                return; // Salir temprano si se pasa turno
             }
         }
 
         if (room.round >= 2) {
-            let hoopSpeed = room.round === 3 ? 2.0 : 1.2;
+            let hoopSpeed = room.round === 3 ? 1.5 : 1.2;
             room.hoopX += room.hoopDirection * hoopSpeed;
             if (room.hoopX >= 450 || room.hoopX <= 150) {
                 room.hoopDirection *= -1;
             }
-            stateChanged = true;
         } else {
             room.hoopX = 300;
         }
@@ -117,19 +119,19 @@ const updateGameState = () => {
             room.ball.vx *= 0.996;
             room.ball.vy *= 0.988;
 
-            const totalSpeed = Math.sqrt(room.ball.vx ** 2 + room.ball.vy ** 2);
+            const totalSpeed = Math.sqrt(room.ball.vx * room.ball.vx + room.ball.vy * room.ball.vy);
             room.ball.rotation += totalSpeed * 0.05;
 
             if (room.ball.x - 30 <= 0 || room.ball.x + 30 >= 600) {
                 if (room.ball.x - 30 <= 0) room.ball.x = 30;
-                else room.ball.x = 570;
+                else room.ball.x = 600 - 30;
                 room.ball.vx *= -0.8;
                 room.ball.vy += (Math.random() - 0.5) * 1;
             }
 
             if (room.ball.y + 30 >= 370 && room.bounceCount < 3) {
                 if (now - room.lastBounceTime > 200) {
-                    room.ball.y = 340;
+                    room.ball.y = 370 - 30;
                     room.bounceCount++;
                     if (room.bounceCount < 3) {
                         room.ball.vy = -Math.abs(room.ball.vy) * 0.8;
@@ -143,7 +145,6 @@ const updateGameState = () => {
                         room.ball.thrown = false;
                         room.shotInProgress = false;
                         finalizarTiro(room, roomName, false);
-                        return; // Salir temprano
                     }
                     room.lastBounceTime = now;
                     room.players.forEach(p => {
@@ -152,8 +153,8 @@ const updateGameState = () => {
                 }
             }
 
-            const hoopLeft = room.hoopX - 37.5;
-            const hoopRight = room.hoopX + 37.5;
+            const hoopLeft = room.hoopX - 75 / 2;
+            const hoopRight = room.hoopX + 75 / 2;
             const hoopTop = 113;
             const hoopBottom = hoopTop + 20;
             const hoopCenterX = room.hoopX;
@@ -179,12 +180,10 @@ const updateGameState = () => {
                     const previousScore = room.scores[room.turn];
                     room.scores[room.turn] += 2;
                     room.afk[room.turn] = 0;
-
                     room.players.forEach(p => {
                         if (p.ws.readyState === 1) {
                             p.ws.send(JSON.stringify({
                                 type: 'scoreUpdate',
-                                scoringPlayer: room.turn,
                                 scores: room.scores,
                                 turn: room.turn,
                                 previousScore: previousScore,
@@ -192,18 +191,7 @@ const updateGameState = () => {
                             }));
                         }
                     });
-
-                    room.players.forEach(p => {
-                        if (p.ws.readyState === 1) {
-                            p.ws.send(JSON.stringify({
-                                type: 'confetti',
-                                scoringPlayer: room.turn
-                            }));
-                        }
-                    });
-
                     finalizarTiro(room, roomName, true);
-                    return; // Salir temprano
                 } else {
                     const hitLeftCorner = Math.abs(room.ball.x - hoopLeft) < 15 && Math.abs(room.ball.y - hoopTop) < 15;
                     const hitRightCorner = Math.abs(room.ball.x - hoopRight) < 15 && Math.abs(room.ball.y - hoopTop) < 15;
@@ -218,44 +206,25 @@ const updateGameState = () => {
                     }
                 }
             }
-
-            stateChanged = true;
         }
 
-        // Solo enviar si hubo cambios
-        if (stateChanged) {
-            const newState = {
-                t: 'u',  // type: 'update' -> t: 'u'
-                s: room.scores,  // scores
-                tr: room.turn,   // turn
-                b: room.ball,    // ball
-                tm: room.timer,  // timer
-                h: room.hoopX,   // hoopX
-                r: room.round,   // round
-                a: room.attempts,// attempts
-                p: room.players.map(p => p.name), // players
-                i: room.playerIcons, // playerIcons
-                c: room.chatMessages // chatMessages
-            };
-
-            // Delta: solo campos cambiados desde prev
-            const prev = prevStates[roomName];
-            const delta = {};
-            for (const key in newState) {
-                if (JSON.stringify(newState[key]) !== JSON.stringify(prev[key])) {
-                    delta[key] = newState[key];
-                }
+        room.players.forEach(p => {
+            if (p.ws.readyState === 1) {
+                p.ws.send(JSON.stringify({
+                    type: 'update',
+                    scores: room.scores,
+                    turn: room.turn,
+                    ball: room.ball,
+                    timer: room.timer,
+                    hoopX: room.hoopX,
+                    round: room.round,
+                    attempts: room.attempts,
+                    players: room.players.map(player => player.name),
+                    playerIcons: room.playerIcons,
+                    chatMessages: room.chatMessages
+                }));
             }
-
-            if (Object.keys(delta).length > 0) {
-                room.players.forEach(p => {
-                    if (p.ws.readyState === 1) {
-                        p.ws.send(JSON.stringify(delta));
-                    }
-                });
-                Object.assign(prev, delta); // Actualizar prev
-            }
-        }
+        });
     }
 };
 
@@ -310,8 +279,7 @@ const passTurn = async (room, roomName) => {
                         type: 'rooms',
                         rooms: {
                             room1: { players: rooms.room1.players.length },
-                            room2: { players: rooms.room2.players.length },
-                            room3: { players: rooms.room3.players.length }
+                            room2: { players: rooms.room2.players.length }
                         }
                     }));
                 }
@@ -323,6 +291,23 @@ const passTurn = async (room, roomName) => {
     if (room.attempts[room.turn] < 5) {
         room.timer = 8;
         room.lastTimerUpdate = Date.now();
+        room.players.forEach(p => {
+            if (p.ws.readyState === 1) {
+                p.ws.send(JSON.stringify({
+                    type: 'update',
+                    scores: room.scores,
+                    turn: room.turn,
+                    ball: room.ball,
+                    timer: room.timer,
+                    hoopX: room.hoopX,
+                    round: room.round,
+                    attempts: room.attempts,
+                    players: room.players.map(player => player.name),
+                    playerIcons: room.playerIcons,
+                    chatMessages: room.chatMessages
+                }));
+            }
+        });
         return;
     }
 
@@ -359,6 +344,23 @@ const passTurn = async (room, roomName) => {
         room.turn = otherPlayer;
         room.timer = 8;
         room.lastTimerUpdate = Date.now();
+        room.players.forEach(p => {
+            if (p.ws.readyState === 1) {
+                p.ws.send(JSON.stringify({
+                    type: 'update',
+                    scores: room.scores,
+                    turn: room.turn,
+                    ball: room.ball,
+                    timer: room.timer,
+                    hoopX: room.hoopX,
+                    round: room.round,
+                    attempts: room.attempts,
+                    players: room.players.map(player => player.name),
+                    playerIcons: room.playerIcons,
+                    chatMessages: room.chatMessages
+                }));
+            }
+        });
     }
 };
 
@@ -428,8 +430,7 @@ const endGame = async (room, roomName) => {
                 type: 'rooms',
                 rooms: {
                     room1: { players: rooms.room1.players.length },
-                    room2: { players: rooms.room2.players.length },
-                    room3: { players: rooms.room3.players.length }
+                    room2: { players: rooms.room2.players.length }
                 }
             }));
         }
@@ -491,8 +492,7 @@ wss.on('connection', (ws) => {
                             type: 'rooms',
                             rooms: {
                                 room1: { players: rooms.room1.players.length },
-                                room2: { players: rooms.room2.players.length },
-                                room3: { players: rooms.room3.players.length }
+                                room2: { players: rooms.room2.players.length }
                             }
                         }));
                     }
@@ -504,14 +504,8 @@ wss.on('connection', (ws) => {
 
         if (data.type === 'shot') {
             const room = rooms[data.room];
-            if (
-                room.turn !== data.playerIndex ||
-                !room.gameStarted ||
-                room.gameEnded ||
-                room.ball.thrown ||
-                room.shotInProgress ||
-                room.attempts[room.turn] >= 5
-            ) {
+            if (room.turn !== data.playerIndex || !room.gameStarted || room.gameEnded ||
+                room.ball.thrown || room.shotInProgress || room.attempts[room.turn] >= 5) {
                 return;
             }
             room.ball.vx = data.ballVX;
@@ -555,8 +549,7 @@ wss.on('connection', (ws) => {
                 type: 'rooms',
                 rooms: {
                     room1: { players: rooms.room1.players.length },
-                    room2: { players: rooms.room2.players.length },
-                    room3: { players: rooms.room3.players.length }
+                    room2: { players: rooms.room2.players.length }
                 }
             }));
         }
@@ -584,8 +577,7 @@ wss.on('connection', (ws) => {
                             type: 'rooms',
                             rooms: {
                                 room1: { players: rooms.room1.players.length },
-                                room2: { players: rooms.room2.players.length },
-                                room3: { players: rooms.room3.players.length }
+                                room2: { players: rooms.room2.players.length }
                             }
                         }));
                     }
@@ -617,7 +609,6 @@ const resetRoom = (room) => {
     room.chatMessages = [];
 };
 
-// Intervalo ajustado a ~90 FPS (11ms), pero con deltas para eficiencia
 setInterval(updateGameState, 11);
 
 server.listen(process.env.PORT || 8080, () => {
