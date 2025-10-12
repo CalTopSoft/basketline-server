@@ -609,7 +609,7 @@ const resetRoom = (room) => {
     room.chatMessages = [];
 };
 
-setInterval(updateGameState, 11);
+setInterval(updateGameState, 16);
 
 server.listen(process.env.PORT || 8080, () => {
     console.log('Server running on port 8080');
